@@ -1,0 +1,691 @@
+/* 剪切板管理器样式 - 紧凑版本 */
+.clipboard-manager {
+  height: 100vh;
+  width: 100vw;
+  display: flex;
+  flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', sans-serif;
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 0;
+  box-shadow: none;
+  border: none;
+  overflow: hidden;
+  -webkit-app-region: drag;
+  margin: 0;
+  padding: 0;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+
+/* 头部样式 - 两行布局 */
+.header {
+  background: rgba(255, 255, 255, 0.9);
+  padding: 0.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  flex-shrink: 0;
+  backdrop-filter: blur(5px);
+  -webkit-app-region: drag;
+}
+
+.header-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.3rem;
+}
+
+.header-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: #333;
+  margin: 0;
+}
+
+.header-bottom {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
+
+.search-bar {
+  flex: 1;
+  min-width: 200px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.9);
+  transition: all 0.2s;
+  -webkit-app-region: no-drag;
+  box-sizing: border-box;
+  max-width: 100%;
+}
+
+.search-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.header-actions {
+  display: flex;
+  gap: 0.3rem;
+  flex-shrink: 0;
+  align-items: center;
+}
+
+/* 主内容区域 - 紧凑版本 */
+.main-content {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+  -webkit-app-region: no-drag;
+  position: relative;
+  z-index: 1;
+}
+
+/* 历史记录面板 - 紧凑版本 */
+.history-panel {
+  width: 100%;
+  flex: 1;
+  background: transparent;
+  overflow-y: auto;
+  -webkit-app-region: no-drag;
+  display: flex;
+  flex-direction: column;
+}
+
+.history-list {
+  padding: 0.5rem;
+  flex: 1;
+  min-height: 0; /* 允许flex子项收缩 */
+}
+
+.history-item {
+  display: flex;
+  align-items: center;
+  padding: 0.6rem;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  margin-bottom: 0.4rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+}
+
+.history-item:hover {
+  background: rgba(248, 249, 250, 0.9);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.history-item.selected {
+  border-color: #007bff;
+  background: rgba(227, 242, 253, 0.9);
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+.item-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.text-preview {
+  font-size: 0.85rem;
+  color: #333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  margin-bottom: 0.2rem;
+  font-weight: 500;
+}
+
+.item-meta {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.75rem;
+  color: #666;
+}
+
+.timestamp {
+  font-size: 0.7rem;
+}
+
+.favorite {
+  font-size: 0.7rem;
+}
+
+/* 按钮样式 - 紧凑版本 */
+.btn {
+  padding: 0.2rem 0.4rem;
+  border: none;
+  border-radius: 4px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  font-weight: 500;
+  -webkit-app-region: no-drag;
+  white-space: nowrap;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, #007bff, #0056b3);
+  color: white;
+}
+
+.btn-primary:hover {
+  background: linear-gradient(135deg, #0056b3, #004085);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(0, 123, 255, 0.3);
+}
+
+.btn-secondary {
+  background: linear-gradient(135deg, #6c757d, #545b62);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background: linear-gradient(135deg, #545b62, #3d4142);
+  transform: translateY(-1px);
+}
+
+.btn-danger {
+  background: linear-gradient(135deg, #dc3545, #c82333);
+  color: white;
+}
+
+.btn-danger:hover {
+  background: linear-gradient(135deg, #c82333, #a71e2a);
+  transform: translateY(-1px);
+}
+
+/* 详情面板 - 移除，改为紧凑布局 */
+.detail-panel {
+  display: none; /* 隐藏详情面板，节省空间 */
+}
+
+/* 设置模态框 */
+.settings-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1500;
+  -webkit-app-region: no-drag;
+}
+
+.settings-content {
+  background: rgba(255, 255, 255, 0.98);
+  backdrop-filter: blur(15px);
+  border-radius: 16px;
+  padding: 1.5rem;
+  min-width: 300px;
+  max-width: 400px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  position: relative;
+  z-index: 1501;
+}
+
+.settings-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.settings-header h3 {
+  margin: 0;
+  color: #333;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.settings-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0;
+  min-height: 2rem;
+}
+
+.setting-item label {
+  color: #333;
+  font-size: 0.9rem;
+  min-width: 100px;
+}
+
+.setting-item input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+}
+
+.setting-item input[type="text"] {
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  font-size: 0.85rem;
+  width: 160px;
+  text-align: center;
+  font-family: 'Consolas', 'Monaco', monospace;
+  box-sizing: border-box;
+}
+
+.setting-item input[type="text"]:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+.setting-item input[type="text"].error {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+}
+
+.setting-error {
+  font-size: 1rem;
+  color: #dc3545;
+  margin-top: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(220, 53, 69, 0.1);
+  border-radius: 6px;
+  border-left: 4px solid #dc3545;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.setting-hint {
+  font-size: 0.9rem;
+  color: #666;
+  margin-top: 0.3rem;
+  padding-left: 0.5rem;
+  line-height: 1.4;
+  font-style: italic;
+}
+
+/* 状态样式 */
+.loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+  color: #666;
+  font-style: italic;
+}
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  flex: 1;
+  color: #666;
+  text-align: center;
+  min-height: 200px;
+}
+
+.empty-state p {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.no-selection {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100%;
+  color: #666;
+  font-style: italic;
+}
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .main-content {
+    flex-direction: column;
+  }
+
+  .history-panel {
+    width: 100%;
+    height: 50%;
+    border-right: none;
+    border-bottom: 1px solid #e0e0e0;
+  }
+
+  .detail-panel {
+    height: 50%;
+  }
+
+  .header {
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: stretch;
+  }
+
+  .search-bar {
+    max-width: none;
+  }
+
+  .header-actions {
+    justify-content: center;
+  }
+}
+
+/* 滚动条样式 - 隐藏主容器的滚动条 */
+.clipboard-manager::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none;
+}
+
+.clipboard-manager {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* IE and Edge */
+}
+
+/* 历史列表的滚动条保持显示 */
+.history-list::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+.history-list::-webkit-scrollbar-track {
+  background: rgba(241, 241, 241, 0.5);
+  border-radius: 4px;
+}
+
+.history-list::-webkit-scrollbar-thumb {
+  background: rgba(193, 193, 193, 0.8);
+  border-radius: 4px;
+}
+
+.history-list::-webkit-scrollbar-thumb:hover {
+  background: rgba(168, 168, 168, 0.9);
+}
+
+/* 快捷键冲突提示模态框 */
+.shortcut-conflict-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 2000;
+  -webkit-app-region: no-drag;
+}
+
+.conflict-content {
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(10px);
+  border-radius: 12px;
+  padding: 1rem;
+  width: 320px;
+  max-width: 90vw;
+  max-height: 80vh;
+  overflow-y: auto;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(220, 53, 69, 0.3);
+}
+
+.conflict-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(220, 53, 69, 0.2);
+}
+
+.conflict-header h3 {
+  margin: 0;
+  color: #dc3545;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.conflict-body {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.conflict-message {
+  padding: 1rem;
+  background: rgba(220, 53, 69, 0.1);
+  border-radius: 8px;
+  border-left: 4px solid #dc3545;
+  margin-bottom: 1rem;
+}
+
+.conflict-message p {
+  margin: 0;
+  color: #721c24;
+  font-weight: 500;
+  font-size: 0.95rem;
+}
+
+.conflict-suggestion {
+  padding: 1rem;
+  background: rgba(255, 193, 7, 0.1);
+  border-radius: 8px;
+  border-left: 4px solid #ffc107;
+}
+
+.conflict-suggestion p {
+  margin: 0;
+  color: #856404;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.conflict-suggestion p strong {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-size: 1rem;
+  color: #664d03;
+}
+
+.conflict-actions {
+  display: flex;
+  gap: 0.8rem;
+  justify-content: flex-end;
+  margin-top: 0.5rem;
+}
+
+.conflict-actions .btn {
+  padding: 0.4rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 500;
+}
+
+/* 备用快捷键按钮 */
+.alternative-shortcuts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+  margin-top: 0.8rem;
+}
+
+.shortcut-suggestion-btn {
+  padding: 0.5rem 0.8rem;
+  border: 2px solid #007bff;
+  border-radius: 8px;
+  background: rgba(0, 123, 255, 0.1);
+  color: #007bff;
+  font-family: 'Consolas', 'Monaco', monospace;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  -webkit-app-region: no-drag;
+}
+
+.shortcut-suggestion-btn:hover {
+  background: rgba(0, 123, 255, 0.2);
+  border-color: #0056b3;
+  color: #0056b3;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0, 123, 255, 0.3);
+}
+
+.shortcut-suggestion-btn:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 4px rgba(0, 123, 255, 0.2);
+}
+
+/* 动画效果 */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.history-item {
+  animation: fadeIn 0.2s ease-out;
+}
+
+/* 快捷键输入容器 */
+.shortcut-input-container {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.shortcut-input {
+  width: 160px;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid rgba(0, 0, 0, 0.15);
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  color: #333;
+  font-size: 0.85rem;
+  text-align: center;
+  font-family: 'Consolas', 'Monaco', monospace;
+  box-sizing: border-box;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.shortcut-input:focus {
+  outline: none;
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0, 123, 255, 0.2);
+}
+
+.shortcut-input.error {
+  border-color: #dc3545;
+  box-shadow: 0 0 0 2px rgba(220, 53, 69, 0.2);
+}
+
+.shortcut-input.recording {
+  background: rgba(255, 243, 224, 0.9);
+  border-color: #ffc107;
+  box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.3);
+  animation: pulse 1.5s infinite;
+}
+
+.shortcut-input:hover {
+  border-color: #007bff;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+.shortcut-input.recording:hover {
+  border-color: #ffc107;
+  background: rgba(255, 243, 224, 0.95);
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(255, 193, 7, 0.5);
+  }
+  100% {
+    box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.3);
+  }
+}
+
+/* 设置模态框样式 */
+.settings-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.settings-backdrop {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(5px);
+}
+
+.settings-panel {
+  position: relative;
+  z-index: 10000;
+  width: 90%;
+  max-width: 450px;
+  height: 80%;
+  max-height: 550px;
+  background: rgba(255, 255, 255, 0.98);
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(10px);
+  overflow: hidden;
+  animation: settingsSlideIn 0.3s ease-out;
+}
+
+@keyframes settingsSlideIn {
+  from {
+    opacity: 0;
+    transform: scale(0.9) translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
