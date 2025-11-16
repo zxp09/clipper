@@ -22,6 +22,7 @@ tauri-build = { version = "2", features = [] }
 tauri = { version = "2", features = ["tray-icon", "image-png", "image-ico"] }
 tauri-plugin-shell = "2"
 tauri-plugin-global-shortcut = "2"
+tauri-plugin-fs = "2"
 
 # 剪切板库 - 跨平台，支持 Windows/macOS/Linux
 clipboard-rs = "0.3"

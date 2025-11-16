@@ -1,0 +1,30 @@
+[build]
+# 使用最大并行度来充分利用多核CPU
+rustflags = ["-C", "target-cpu=native"]
+
+# 启用链接时优化（LTO）
+# 这会显著减小最终可执行文件的大小
+[target.x86_64-pc-windows-ms]
+rustflags = ["-C", "target-cpu=native", "-C", "link-args=-flto"]
+linker = "rust-lld.exe"
+
+[target.x86_64-unknown-linux-gnu]
+rustflags = ["-C", "target-cpu=native", "-C", "link-args=-flto"]
+
+[target.x86_64-apple-darwin]
+rustflags = ["-C", "target-cpu=native", "-C", "link-args=-flto"]
+
+# 优化配置
+[profile.release]
+# 启用所有优化
+lto = true
+codegen-units = 1 # 更好的优化，但编译时间更长
+opt-level = 3
+overflow-checks = false
+debug = false
+
+# 调试配置（如果需要）
+[profile.dev]
+debug = true
+opt-level = 0
+overflow-checks = true

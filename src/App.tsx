@@ -1,7 +1,9 @@
 import { useState, useEffect } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import Settings from "./Settings";
+import WelcomeWizard from "./components/WelcomeWizard";
 import "./App.css";
+import "./components/WelcomeWizard.css";
 
 interface ClipboardItem {
   id: number;
@@ -22,6 +24,7 @@ function App() {
   const [currentPage, setCurrentPage] = useState<'history' | 'settings'>('history');
   const [clipboardMonitoringEnabled, setClipboardMonitoringEnabled] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0);
+  const [showWelcomeWizard, setShowWelcomeWizard] = useState(false);
 
   // 按需剪切板监控定时器
   const startClipboardMonitoring = () => {
@@ -186,8 +189,30 @@ function App() {
   };
 
   
+  // 检查是否首次启动
+  const checkFirstLaunch = async () => {
+    try {
+      // 使用后端命令检查首次启动
+      const isFirstLaunch = await invoke<boolean>('check_first_launch');
+      if (isFirstLaunch) {
+        setShowWelcomeWizard(true);
+      }
+    } catch (error) {
+      console.error('检查首次启动失败:', error);
+      // 出错时默认不显示向导
+    }
+  };
+
+  // 欢迎向导完成回调
+  const handleWelcomeWizardComplete = () => {
+    setShowWelcomeWizard(false);
+    // 可以在这里添加向导完成后的额外逻辑
+    console.log('首次使用向导完成');
+  };
+
   // 组件加载时获取数据
   useEffect(() => {
+    checkFirstLaunch();
     loadClipboardHistory();
     loadSettings();
 
@@ -283,6 +308,13 @@ function App() {
 
   return (
     <div className="clipboard-manager">
+      {/* 欢迎向导 */}
+      {showWelcomeWizard && (
+        <WelcomeWizard
+          onComplete={handleWelcomeWizardComplete}
+          onClose={() => setShowWelcomeWizard(false)}
+        />
+      )}
       {/* 根据当前页面渲染不同内容 */}
       {currentPage === 'history' ? (
         <>

@@ -2,12 +2,15 @@
 mod macros;
 mod storage;
 mod clipboard;
+mod platform;
+mod platform_commands;
 
 use std::sync::{Arc, Mutex};
 use tauri::PhysicalPosition as DpiPhysicalPosition;
 use tauri::image::Image;
 use tauri::{AppHandle, Emitter, Listener, Manager, Position, State};
 use storage::{ClipboardItem, SharedStorage, SimpleStorage};
+use platform::{get_platform_adapter, Permission};
 use serde_json::json;
 use std::collections::HashSet;
 
@@ -632,6 +635,48 @@ async fn get_last_updated(storage: State<'_, SharedStorage>) -> Result<u64, Stri
     Ok(storage.get_last_updated())
 }
 
+// 检查是否首次启动
+#[tauri::command]
+async fn check_first_launch() -> Result<bool, String> {
+    use std::fs;
+    use std::path::PathBuf;
+
+    // 使用与存储相同的路径解析逻辑
+    let storage_path = match storage::SimpleStorage::resolve_storage_path() {
+        Ok(path) => path,
+        Err(e) => return Err(format!("解析存储路径失败: {}", e)),
+    };
+
+    // 获取存储目录（去掉文件名）
+    let mut storage_dir = storage_path.clone();
+    storage_dir.pop();
+
+    // 首次启动标记文件路径
+    let mut first_launch_file = storage_dir;
+    first_launch_file.push(".first_launch");
+
+    // 检查文件是否存在
+    if first_launch_file.exists() {
+        // 文件存在，不是首次启动
+        Ok(false)
+    } else {
+        // 文件不存在，是首次启动，创建标记文件
+        let timestamp = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_secs()
+            .to_string();
+        match fs::write(first_launch_file, timestamp) {
+            Ok(_) => Ok(true),
+            Err(e) => {
+                eprintln!("创建首次启动标记文件失败: {}", e);
+                // 即使创建失败，也返回 true，因为确实是首次启动
+                Ok(true)
+            }
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // 创建共享存储
@@ -652,6 +697,7 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
+        .plugin(tauri_plugin_fs::init())
         .manage(shared_storage)
         .manage(UiState::default())
         .invoke_handler(tauri::generate_handler![
@@ -673,7 +719,12 @@ pub fn run() {
             restart_app,
             check_clipboard_changes,
             toggle_clipboard_monitoring,
-            get_last_updated
+            get_last_updated,
+            check_first_launch,
+            platform_commands::get_platform_info,
+            platform_commands::check_permissions,
+            platform_commands::request_permission,
+            platform_commands::open_system_settings
         ])
         .setup(|app| {
             // 在生产模式下启动后台剪切板监控

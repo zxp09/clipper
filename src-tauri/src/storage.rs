@@ -31,11 +31,13 @@ pub struct AppSettings {
 
 impl Default for AppSettings {
     fn default() -> Self {
+        // 使用平台适配器获取默认快捷键
+        let adapter = crate::platform::get_platform_adapter();
         Self {
             max_items: 100,
             max_size_mb: 50,
             auto_start: false,
-            shortcut: "Ctrl+F11".to_string(),
+            shortcut: adapter.default_shortcut(),
         }
     }
 }
@@ -46,7 +48,7 @@ pub struct SimpleStorage {
 }
 
 impl SimpleStorage {
-    fn resolve_storage_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
+    pub fn resolve_storage_path() -> Result<PathBuf, Box<dyn std::error::Error>> {
         let mut candidates = Vec::new();
         candidates.push(data_local_dir());
         candidates.push(data_dir());
