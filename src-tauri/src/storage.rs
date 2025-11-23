@@ -19,6 +19,8 @@ pub struct ClipboardData {
     pub next_id: u64,
     pub settings: AppSettings,
     pub last_updated: u64,
+    #[serde(default)]
+    pub is_first_launch: bool,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -120,6 +122,7 @@ impl SimpleStorage {
                         last_updated: SystemTime::now()
                             .duration_since(UNIX_EPOCH)?
                             .as_secs(),
+                        is_first_launch: false,
                     };
 
                     // 保存更新后的数据
@@ -137,6 +140,7 @@ impl SimpleStorage {
                 last_updated: SystemTime::now()
                     .duration_since(UNIX_EPOCH)?
                     .as_secs(),
+                is_first_launch: true,
             }
         };
 
@@ -219,6 +223,20 @@ impl SimpleStorage {
             self.save()?;
         }
         Ok(removed)
+    }
+
+    pub fn set_item_favorite(&mut self, id: u64, is_favorite: bool) -> Result<bool, Box<dyn std::error::Error>> {
+        if let Some(item) = self.data.items.iter_mut().find(|item| item.id == id) {
+            if item.is_favorite != is_favorite {
+                item.is_favorite = is_favorite;
+                self.data.last_updated = SystemTime::now()
+                    .duration_since(UNIX_EPOCH)?
+                    .as_secs();
+                self.save()?;
+            }
+            return Ok(true);
+        }
+        Ok(false)
     }
 
     pub fn clear_all(&mut self) -> Result<(), Box<dyn std::error::Error>> {

@@ -401,6 +401,18 @@ async fn delete_history_item(
 }
 
 #[tauri::command]
+async fn set_item_favorite(
+    id: u64,
+    is_favorite: bool,
+    storage: State<'_, SharedStorage>,
+) -> Result<bool, String> {
+    let mut storage = storage.lock().map_err(|e| e.to_string())?;
+    storage
+        .set_item_favorite(id, is_favorite)
+        .map_err(|e| format!("更新置顶状态失败: {}", e))
+}
+
+#[tauri::command]
 async fn clear_all_history(
     storage: State<'_, SharedStorage>,
 ) -> Result<(), String> {
@@ -647,43 +659,16 @@ async fn get_last_updated(storage: State<'_, SharedStorage>) -> Result<u64, Stri
 
 // 检查是否首次启动
 #[tauri::command]
-async fn check_first_launch() -> Result<bool, String> {
-    use std::fs;
-
-    // 使用与存储相同的路径解析逻辑
-    let storage_path = match storage::SimpleStorage::resolve_storage_path() {
-        Ok(path) => path,
-        Err(e) => return Err(format!("解析存储路径失败: {}", e)),
-    };
-
-    // 获取存储目录（去掉文件名）
-    let mut storage_dir = storage_path.clone();
-    storage_dir.pop();
-
-    // 首次启动标记文件路径
-    let mut first_launch_file = storage_dir;
-    first_launch_file.push(".first_launch");
-
-    // 检查文件是否存在
-    if first_launch_file.exists() {
-        // 文件存在，不是首次启动
-        Ok(false)
-    } else {
-        // 文件不存在，是首次启动，创建标记文件
-        let timestamp = std::time::SystemTime::now()
-            .duration_since(std::time::UNIX_EPOCH)
-            .unwrap()
-            .as_secs()
-            .to_string();
-        match fs::write(first_launch_file, timestamp) {
-            Ok(_) => Ok(true),
-            Err(e) => {
-                eprintln!("创建首次启动标记文件失败: {}", e);
-                // 即使创建失败，也返回 true，因为确实是首次启动
-                Ok(true)
-            }
-        }
+async fn check_first_launch(storage: State<'_, SharedStorage>) -> Result<bool, String> {
+    let mut storage = storage.lock().map_err(|e| e.to_string())?;
+    let is_first = storage.data.is_first_launch;
+    if is_first {
+        storage.data.is_first_launch = false;
+        storage
+            .save()
+            .map_err(|e| format!("更新首次启动状态失败: {}", e))?;
     }
+    Ok(is_first)
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
@@ -716,6 +701,7 @@ pub fn run() {
             copy_to_clipboard,
             type_text_to_focused_input,
             delete_history_item,
+            set_item_favorite,
             clear_all_history,
             get_settings,
             update_settings,
