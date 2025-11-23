@@ -122,6 +122,13 @@
   animation: pulse 1.5s infinite;
 }
 
+.permission-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  justify-content: flex-end;
+}
+
 .setting-item input[type="text"]:hover {
   border-color: #007bff;
   background: rgba(255, 255, 255, 0.95);

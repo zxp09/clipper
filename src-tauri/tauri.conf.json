@@ -42,21 +42,6 @@
         "transparent": true,
         "hiddenTitle": true,
         "titleBarStyle": "Overlay"
-      },
-      {
-        "label": "wizard",
-        "title": "欢迎使用 Clipper",
-        "width": 600,
-        "height": 700,
-        "resizable": false,
-        "minWidth": 600,
-        "minHeight": 700,
-        "center": true,
-        "skipTaskbar": false,
-        "alwaysOnTop": false,
-        "decorations": true,
-        "transparent": false,
-        "visible": false
       }
     ],
     "security": {

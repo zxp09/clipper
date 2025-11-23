@@ -6,6 +6,7 @@ mod platform;
 mod platform_commands;
 
 use std::sync::{Arc, Mutex};
+use std::time::Instant;
 use tauri::PhysicalPosition as DpiPhysicalPosition;
 use tauri::image::Image;
 use tauri::{AppHandle, Emitter, Listener, Manager, Position, State};
@@ -136,9 +137,18 @@ impl ShortcutManager {
     }
 }
 
-#[derive(Default)]
 struct UiState {
-    disable_hotkey_toggle: Mutex<bool>,
+    disable_hotkey_toggle: Arc<Mutex<bool>>,
+    last_window_move: Arc<Mutex<Option<Instant>>>,
+}
+
+impl Default for UiState {
+    fn default() -> Self {
+        Self {
+            disable_hotkey_toggle: Arc::new(Mutex::new(false)),
+            last_window_move: Arc::new(Mutex::new(None)),
+        }
+    }
 }
 
 fn position_window_near_cursor(window: &tauri::WebviewWindow, cursor: DpiPhysicalPosition<f64>) {
@@ -639,7 +649,6 @@ async fn get_last_updated(storage: State<'_, SharedStorage>) -> Result<u64, Stri
 #[tauri::command]
 async fn check_first_launch() -> Result<bool, String> {
     use std::fs;
-    use std::path::PathBuf;
 
     // 使用与存储相同的路径解析逻辑
     let storage_path = match storage::SimpleStorage::resolve_storage_path() {
@@ -782,17 +791,11 @@ pub fn run() {
                 }
 
                 // 窗口关闭时不要退出应用（因为需要后台剪切板监控）
+                let icon_image = build_tray_icon_image();
                 let window = app.get_webview_window("main").unwrap();
+                let _ = window.set_icon(icon_image.clone());
                 let window_clone = window.clone();
-
-                // 启动时隐藏主窗口，只在用户按下快捷键时显示
-                let window_for_hide = window.clone();
-                tauri::async_runtime::spawn(async move {
-                    // 给窗口一点时间完全初始化
-                    tokio::time::sleep(tokio::time::Duration::from_millis(100)).await;
-                    let _ = window_for_hide.hide();
-                    dev_log!("启动时已隐藏主窗口");
-                });
+                let move_state = app.state::<UiState>().last_window_move.clone();
 
                 window.on_window_event(move |event| {
                     match event {
@@ -801,9 +804,25 @@ pub fn run() {
                             // 隐藏窗口而不是关闭应用
                             let _ = window_clone.hide();
                         }
+                        tauri::WindowEvent::Moved(_) | tauri::WindowEvent::Resized(_) => {
+                            if let Ok(mut last_move) = move_state.lock() {
+                                *last_move = Some(Instant::now());
+                            }
+                        }
                         tauri::WindowEvent::Focused(focused) => {
-                            if !focused {
-                                if window_clone.is_visible().unwrap_or(false) {
+                            if !focused && window_clone.is_visible().unwrap_or(false) {
+                                let suppress_hide = move_state
+                                    .lock()
+                                    .map(|state| {
+                                        state
+                                            .map(|inst| inst.elapsed() < std::time::Duration::from_millis(350))
+                                            .unwrap_or(false)
+                                    })
+                                    .unwrap_or(false);
+
+                                if suppress_hide {
+                                    dev_log!("窗口拖动中，跳过自动隐藏");
+                                } else {
                                     dev_log!("窗口失去焦点，自动隐藏");
                                     let _ = window_clone.hide();
                                 }
@@ -833,7 +852,7 @@ pub fn run() {
                     &tauri::menu::PredefinedMenuItem::separator(app).unwrap(),
                     &quit_item
                 ]).unwrap();
-                let tray_icon_image = build_tray_icon_image();
+                let tray_icon_image = icon_image.clone();
 
 
 

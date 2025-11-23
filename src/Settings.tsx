@@ -25,6 +25,12 @@ function Settings({ onRequestRestart, onClose }: SettingsProps) {
   const [maxItemsError, setMaxItemsError] = useState<string | null>(null);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [clearLoading, setClearLoading] = useState(false);
+  const [platformInfo, setPlatformInfo] = useState<{ platform: string } | null>(null);
+  const [permissionStatus, setPermissionStatus] = useState<{ checking: boolean; message: string }>({
+    checking: false,
+    message: "尚未检测",
+  });
+  const isMac = platformInfo?.platform === "macOS";
   const setHotkeyPassthrough = (disabled: boolean) => {
     invoke("set_hotkey_passthrough", { disabled }).catch((error) => {
       console.error("更新热键穿透状态失败:", error);
@@ -45,6 +51,38 @@ function Settings({ onRequestRestart, onClose }: SettingsProps) {
       }
     } catch (error) {
       console.error("加载设置失败:", error);
+    }
+  };
+
+  const loadPlatformInfo = async () => {
+    try {
+      const info = await invoke<{ platform: string }>('get_platform_info');
+      setPlatformInfo(info);
+    } catch (error) {
+      console.error("获取平台信息失败:", error);
+    }
+  };
+
+  const refreshPermissions = async () => {
+    setPermissionStatus({ checking: true, message: "检测中..." });
+    try {
+      const errors = await invoke<string[]>("check_permissions");
+      if (errors.length === 0) {
+        setPermissionStatus({ checking: false, message: "权限已就绪" });
+      } else {
+        setPermissionStatus({ checking: false, message: errors.join("；") });
+      }
+    } catch (error) {
+      console.error("检测权限失败:", error);
+      setPermissionStatus({ checking: false, message: "检测失败，请稍后再试" });
+    }
+  };
+
+  const openSystemPreferences = async (type: string) => {
+    try {
+      await invoke("open_system_settings", { settingType: type });
+    } catch (error) {
+      console.error("打开系统设置失败:", error);
     }
   };
 
@@ -203,7 +241,14 @@ function Settings({ onRequestRestart, onClose }: SettingsProps) {
   // 组件加载时获取设置
   useEffect(() => {
     loadSettings();
+    loadPlatformInfo();
   }, []);
+
+  useEffect(() => {
+    if (platformInfo?.platform === 'macOS') {
+      refreshPermissions();
+    }
+  }, [platformInfo]);
 
   useEffect(() => {
     return () => {
@@ -267,6 +312,44 @@ function Settings({ onRequestRestart, onClose }: SettingsProps) {
             {shortcutSaving ? '保存中...' : '保存快捷键'}
           </button>
         </div>
+
+        {isMac && (
+          <div className="setting-section">
+            <h3>macOS 权限</h3>
+            <div className="setting-item">
+              <div style={{ display: 'flex', flexDirection: 'column', flex: 1, minWidth: 0 }}>
+                <label>辅助功能 / 通知权限</label>
+                <div className="shortcut-status">
+                  {permissionStatus.checking ? '检测中...' : permissionStatus.message}
+                </div>
+              </div>
+              <div className="permission-actions">
+                <button
+                  className="btn btn-secondary"
+                  onClick={refreshPermissions}
+                  disabled={permissionStatus.checking}
+                >
+                  {permissionStatus.checking ? '正在检测' : '重新检测'}
+                </button>
+                <button
+                  className="btn btn-primary"
+                  onClick={() => openSystemPreferences('accessibility')}
+                >
+                  打开辅助功能设置
+                </button>
+                <button
+                  className="btn btn-secondary"
+                  onClick={() => openSystemPreferences('notifications')}
+                >
+                  通知设置
+                </button>
+              </div>
+            </div>
+            <div className="setting-hint">
+              macOS 在启用全局快捷键、粘贴到焦点窗口等功能时需要辅助功能授权；若需要系统提醒，也需开启通知权限。
+            </div>
+          </div>
+        )}
 
                 <div className="setting-section">
           <h3>数据管理</h3>

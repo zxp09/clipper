@@ -165,6 +165,50 @@
   font-size: 0.7rem;
 }
 
+.history-item.pinned {
+  border: 1px solid #f59e0b;
+  box-shadow: 0 10px 25px rgba(245, 158, 11, 0.2);
+}
+
+.history-item.pinned .favorite {
+  color: #f59e0b;
+}
+
+.history-context-menu {
+  position: fixed;
+  background: #fff;
+  border-radius: 12px;
+  min-width: 180px;
+  box-shadow: 0 22px 45px rgba(15, 23, 42, 0.3);
+  padding: 8px 0;
+  border: 1px solid #e5e7eb;
+  z-index: 1500;
+}
+
+.history-context-menu button {
+  width: 100%;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  text-align: left;
+  font-size: 14px;
+  color: #1f2937;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.history-context-menu button:hover {
+  background-color: #f3f4f6;
+}
+
+.history-context-menu button.danger {
+  color: #dc2626;
+}
+
+.history-context-menu button.danger:hover {
+  background-color: #fee2e2;
+}
+
 /* 按钮样式 - 紧凑版本 */
 .btn {
   padding: 0.2rem 0.4rem;

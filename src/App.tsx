@@ -1,15 +1,21 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
+import type { MouseEvent as ReactMouseEvent } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import Settings from "./Settings";
-import WelcomeWizard from "./components/WelcomeWizard";
 import "./App.css";
-import "./components/WelcomeWizard.css";
 
 interface ClipboardItem {
   id: number;
   content: string;
   timestamp: number;
   is_favorite: boolean;
+}
+
+interface ContextMenuState {
+  visible: boolean;
+  x: number;
+  y: number;
+  item: ClipboardItem | null;
 }
 
 function App() {
@@ -24,7 +30,22 @@ function App() {
   const [currentPage, setCurrentPage] = useState<'history' | 'settings'>('history');
   const [clipboardMonitoringEnabled, setClipboardMonitoringEnabled] = useState(false);
   const [lastUpdateTime, setLastUpdateTime] = useState<number>(0);
-  const [showWelcomeWizard, setShowWelcomeWizard] = useState(false);
+  const [contextMenu, setContextMenu] = useState<ContextMenuState>({
+    visible: false,
+    x: 0,
+    y: 0,
+    item: null
+  });
+  const activeContextItem = contextMenu.item;
+
+  const closeContextMenu = useCallback(() => {
+    setContextMenu({
+      visible: false,
+      x: 0,
+      y: 0,
+      item: null
+    });
+  }, []);
 
   // 按需剪切板监控定时器
   const startClipboardMonitoring = () => {
@@ -176,6 +197,45 @@ function App() {
     }
   };
 
+  const handleDeleteWithConfirm = async (id: number) => {
+    const confirmed = typeof window === 'undefined' ? true : window.confirm("确定要删除这条剪切板记录吗？");
+    if (!confirmed) return;
+    await deleteItem(id);
+    closeContextMenu();
+  };
+
+  const handleTogglePin = async (item: ClipboardItem) => {
+    try {
+      await invoke("set_item_favorite", { id: item.id, is_favorite: !item.is_favorite });
+      setClipboardHistory(prev =>
+        prev.map(historyItem =>
+          historyItem.id === item.id ? { ...historyItem, is_favorite: !historyItem.is_favorite } : historyItem
+        )
+      );
+    } catch (error) {
+      console.error("更新置顶状态失败:", error);
+    } finally {
+      closeContextMenu();
+    }
+  };
+
+  const handleContextMenu = (event: ReactMouseEvent<HTMLDivElement>, item: ClipboardItem) => {
+    event.preventDefault();
+    const viewportWidth = typeof window === 'undefined' ? 800 : window.innerWidth;
+    const viewportHeight = typeof window === 'undefined' ? 600 : window.innerHeight;
+    const menuWidth = 180;
+    const menuHeight = 96;
+    const x = Math.max(8, Math.min(event.clientX, viewportWidth - menuWidth));
+    const y = Math.max(8, Math.min(event.clientY, viewportHeight - menuHeight));
+
+    setContextMenu({
+      visible: true,
+      x,
+      y,
+      item
+    });
+  };
+
   // 格式化时间戳
   const formatTimestamp = (timestamp: number) => {
     const date = new Date(timestamp * 1000);
@@ -188,26 +248,23 @@ function App() {
     return content.substring(0, maxLength) + "...";
   };
 
+  const sortedHistory = useMemo(() => {
+    return [...clipboardHistory].sort((a, b) => {
+      if (a.is_favorite === b.is_favorite) {
+        return b.timestamp - a.timestamp;
+      }
+      return a.is_favorite ? -1 : 1;
+    });
+  }, [clipboardHistory]);
+
   
   // 检查是否首次启动
   const checkFirstLaunch = async () => {
     try {
-      // 使用后端命令检查首次启动
-      const isFirstLaunch = await invoke<boolean>('check_first_launch');
-      if (isFirstLaunch) {
-        setShowWelcomeWizard(true);
-      }
+      await invoke<boolean>('check_first_launch');
     } catch (error) {
       console.error('检查首次启动失败:', error);
-      // 出错时默认不显示向导
     }
-  };
-
-  // 欢迎向导完成回调
-  const handleWelcomeWizardComplete = () => {
-    setShowWelcomeWizard(false);
-    // 可以在这里添加向导完成后的额外逻辑
-    console.log('首次使用向导完成');
   };
 
   // 组件加载时获取数据
@@ -287,7 +344,6 @@ function App() {
 
   // 生产模式下的定时检查机制
   useEffect(() => {
-    // 仅在生产模式下启用
     if (process.env.NODE_ENV === 'development') return;
 
     const checkInterval = setInterval(async () => {
@@ -306,15 +362,39 @@ function App() {
     return () => clearTimeout(timeoutId);
   }, [searchQuery]);
 
+  useEffect(() => {
+    if (!contextMenu.visible) return;
+
+    const handleDismiss = () => closeContextMenu();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        closeContextMenu();
+      }
+    };
+
+    document.addEventListener("click", handleDismiss);
+    document.addEventListener("contextmenu", handleDismiss);
+    document.addEventListener("scroll", handleDismiss, true);
+
+    if (typeof window !== "undefined") {
+      window.addEventListener("blur", handleDismiss);
+      window.addEventListener("keydown", handleKeyDown);
+    }
+
+    return () => {
+      document.removeEventListener("click", handleDismiss);
+      document.removeEventListener("contextmenu", handleDismiss);
+      document.removeEventListener("scroll", handleDismiss, true);
+
+      if (typeof window !== "undefined") {
+        window.removeEventListener("blur", handleDismiss);
+        window.removeEventListener("keydown", handleKeyDown);
+      }
+    };
+  }, [contextMenu.visible, closeContextMenu]);
+
   return (
     <div className="clipboard-manager">
-      {/* 欢迎向导 */}
-      {showWelcomeWizard && (
-        <WelcomeWizard
-          onComplete={handleWelcomeWizardComplete}
-          onClose={() => setShowWelcomeWizard(false)}
-        />
-      )}
       {/* 根据当前页面渲染不同内容 */}
       {currentPage === 'history' ? (
         <>
@@ -342,15 +422,15 @@ function App() {
             <div className="loading">加载中...</div>
           ) : (
             <div className="history-list">
-              {clipboardHistory.length === 0 ? (
+              {sortedHistory.length === 0 ? (
                 <div className="empty-state">
                   <p>没有剪切板历史记录</p>
                 </div>
               ) : (
-                clipboardHistory.map((item) => (
+                sortedHistory.map((item) => (
                   <div
                     key={item.id}
-                    className="history-item"
+                    className={`history-item ${item.is_favorite ? "pinned" : ""}`}
                     onClick={() => {
                       // 先隐藏窗口，让焦点回到原来的应用程序
                       invoke('hide_window').then(() => {
@@ -360,11 +440,8 @@ function App() {
                         }, 100);
                       }).catch(console.error);
                     }}
-                    onContextMenu={(e) => {
-                      e.preventDefault();
-                      deleteItem(item.id);
-                    }}
-                    title="点击输入到当前焦点输入框，右键删除"
+                    onContextMenu={(e) => handleContextMenu(e, item)}
+                    title="点击输入到当前焦点输入框，右键查看更多操作"
                   >
                     <div className="item-content">
                       <div className="text-preview">
@@ -391,6 +468,21 @@ function App() {
             onClose={closeSettingsPage}
           />
         </>
+      )}
+
+      {contextMenu.visible && activeContextItem && (
+        <div
+          className="history-context-menu"
+          style={{ top: contextMenu.y, left: contextMenu.x }}
+          onContextMenu={(e) => e.preventDefault()}
+        >
+          <button onClick={() => handleTogglePin(activeContextItem)}>
+            {activeContextItem.is_favorite ? "取消置顶" : "置顶"}
+          </button>
+          <button className="danger" onClick={() => handleDeleteWithConfirm(activeContextItem.id)}>
+            删除
+          </button>
+        </div>
       )}
 
       {/* 快捷键冲突提示模态框 */}
