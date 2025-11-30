@@ -56,7 +56,7 @@
 .setting-item {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
   padding: 1rem 0;
   border-bottom: 1px solid rgba(0, 0, 0, 0.05);
   width: 100%;
@@ -67,6 +67,11 @@
 
 .setting-item:last-child {
   border-bottom: none;
+}
+
+.setting-item > div:first-child {
+  flex: 1 1 220px;
+  min-width: 200px;
 }
 
 .setting-item label {
@@ -227,6 +232,7 @@
   align-items: center;
   flex-wrap: wrap;
   justify-content: flex-end;
+  flex-shrink: 0;
 }
 
 .max-items-control input {
@@ -244,4 +250,20 @@
   border-left: 4px solid #28a745;
   font-weight: 500;
   line-height: 1.4;
+}
+
+@media (max-width: 480px) {
+  .setting-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .setting-item > div:first-child {
+    width: 100%;
+  }
+
+  .max-items-control {
+    width: 100%;
+    justify-content: flex-start;
+  }
 }

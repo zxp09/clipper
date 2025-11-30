@@ -83,6 +83,14 @@ impl ShortcutManager {
             }
             Err(e) => {
                 eprintln!("注册快捷键失败: {} - {}", shortcut, e);
+                // 注册接口可能返回错误但实际已注册成功，额外验证一次避免误报冲突
+                if self.app_handle.global_shortcut().is_registered(shortcut) {
+                    dev_log!("注册返回错误但快捷键已生效，视为成功: {}", shortcut);
+                    let mut registered = self.registered_shortcuts.lock().unwrap();
+                    registered.insert(shortcut.to_string());
+                    return Ok(());
+                }
+
                 // 检查错误信息，如果是因为已经注册则不视为错误
                 let error_msg = e.to_string();
                 if error_msg.contains("already registered") || error_msg.contains("HotKey already registered") {
@@ -92,13 +100,12 @@ impl ShortcutManager {
                     registered.insert(shortcut.to_string());
                     Ok(())
                 } else {
-                    Err(format!("快捷键冲突: {}", e).into())
+                    Err(format!("快捷键冲突 {}", e).into())
                 }
             }
         }
     }
 
-    // 注销快捷键
     pub fn unregister_shortcut(&self, shortcut: &str) -> Result<(), Box<dyn std::error::Error>> {
         use tauri_plugin_global_shortcut::GlobalShortcutExt;
 
